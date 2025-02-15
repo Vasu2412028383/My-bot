@@ -92,7 +92,7 @@ async def check_card_with_limit(update: Update, context: CallbackContext) -> Non
 # Main function to set up the bot
 async def main():
     # Directly set your bot token here
-    TOKEN = "8011551620:AAFvDlRL7brL1JF9kEpQJXIVzZf01og4Lc0"  # Replace with your actual bot token
+    TOKEN = "YOUR_BOT_TOKEN"  # Replace with your actual bot token
     app = Application.builder().token(TOKEN).build()
 
     # Add command handlers
@@ -106,4 +106,9 @@ async def main():
 # Run the bot
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(main())
