@@ -1,81 +1,67 @@
-import logging
 import random
-import asyncio
-from datetime import datetime
 from telegram import Update
-from telegram.ext import Application, CommandHandler, CallbackContext
+from telegram.ext import Updater, CommandHandler, CallbackContext
 
-# Set up logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-logger = logging.getLogger(__name__)
+TOKEN = "8011551620:AAFvDlRL7brL1JF9kEpQJXIVzZf01og4Lc0"  # Yaha apna Telegram Bot Token daalo
 
-# Dictionary to track user card checks
-user_checks = {}
+# Luhn Algorithm for Valid CC
+def luhn_checksum(card_number):
+    def digits_of(n):
+        return [int(d) for d in str(n)]
+    
+    digits = digits_of(card_number)
+    checksum = 0
+    even = False
 
-async def start(update: Update, context: CallbackContext) -> None:
-    user_first_name = update.message.from_user.first_name
-    welcome_message = f"Welcome, {user_first_name}! 🎉\n\nCheck out our channel: [Your Channel](https://t.me/darkdorking)"
-    await update.message.reply_text(welcome_message, parse_mode='Markdown')
+    for d in reversed(digits):
+        if even:
+            d *= 2
+            if d > 9:
+                d -= 9
+        checksum += d
+        even = not even
 
-async def generate_card(update: Update, context: CallbackContext) -> None:
-    if context.args and len(context.args) == 2:
-        bin_number = context.args[0]  
-        expire_date = context.args[1]  
-        card_number = f"{bin_number}{random.randint(100000000, 999999999)}"
-        
-        card_message = (
-            f"Card Generated! 🎴\n"
-            f"**Card Number:** {card_number}\n"
-            f"**Expiration Date:** {expire_date}\n"
-            f"**BIN:** {bin_number}\n"
-        )
-        await update.message.reply_text(card_message, parse_mode='Markdown')
+    return checksum % 10
+
+# CC Generator Function
+def generate_credit_card(bin_number, quantity=5):
+    generated_cards = []
+    
+    for _ in range(quantity):
+        card_number = str(bin_number) + ''.join(str(random.randint(0, 9)) for _ in range(15 - len(str(bin_number))))
+        check_digit = (10 - luhn_checksum(card_number + "0")) % 10
+        final_card_number = card_number + str(check_digit)
+
+        expiry_month = str(random.randint(1, 12)).zfill(2)
+        expiry_year = str(random.randint(25, 30))  # Expiry between 2025-2030
+        cvv = str(random.randint(100, 999))
+
+        generated_cards.append(f"{final_card_number} | {expiry_month}/{expiry_year} | {cvv}")
+    
+    return "\n".join(generated_cards)
+
+# Telegram Command Handler
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("Welcome! Send /ccgen <BIN> to generate credit cards.")
+
+def ccgen(update: Update, context: CallbackContext) -> None:
+    if len(context.args) == 1 and context.args[0].isdigit() and len(context.args[0]) == 6:
+        bin_input = context.args[0]
+        cc_list = generate_credit_card(bin_input)
+        update.message.reply_text(f"Generated Credit Cards:\n{cc_list}")
     else:
-        await update.message.reply_text("Usage: /gen <bin> <expire_date>")
+        update.message.reply_text("Invalid command! Use: /ccgen <6-digit BIN>")
 
-async def check_card_with_limit(update: Update, context: CallbackContext) -> None:
-    user_id = update.message.from_user.id
-    card_number = context.args[0] if context.args else None
+# Main Function
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-    if not card_number:
-        await update.message.reply_text("Usage: /chk <card_number>")
-        return
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("ccgen", ccgen))
 
-    if user_id not in user_checks:
-        user_checks[user_id] = {'count': 0, 'last_checked': datetime.now()}
+    updater.start_polling()
+    updater.idle()
 
-    if (datetime.now() - user_checks[user_id]['last_checked']).days > 0:
-        user_checks[user_id]['count'] = 0
-        user_checks[user_id]['last_checked'] = datetime.now()
-
-    if user_checks[user_id]['count'] < 20:
-        is_live = random.choice([True, False])
-        user_checks[user_id]['count'] += 1
-        
-        status_message = (
-            f"Card Status Check! 🔍\n"
-            f"**Card Number:** {card_number}\n"
-            f"**Status:** {'Live' if is_live else 'Dead'}\n"
-        )
-        await update.message.reply_text(status_message, parse_mode='Markdown')
-    else:
-        await update.message.reply_text("Daily limit reached! Upgrade to premium membership for more checks.")
-
-async def main():
-    TOKEN = "8011551620:AAFvDlRL7brL1JF9kEpQJXIVzZf01og4Lc0"  
-    app = Application.builder().token(TOKEN).build()
-
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("gen", generate_card))
-    app.add_handler(CommandHandler("chk", check_card_with_limit))
-
-    print("Bot is running...")
-    await app.run_polling()
-
-if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    if loop.is_running():
-        print("Existing event loop detected. Running in new task.")
-        loop.create_task(main())
-    else:
-        asyncio.run(main())
+if __name__ == "__main__":
+    main()
