@@ -75,7 +75,8 @@ def check_card_with_limit(update: Update, context: CallbackContext) -> None:
 def main():
     # Directly set your bot token here
     token = "7695368751:AAFVrzejlS0BLKZD7Bb1HXXgWl5PGclex_0"  # Replace with your actual bot token
-    updater = Updater(token)  # Add your bot token here
+    app = Application.builder().token(TOKEN).build()
+  # Add your bot token here
     dispatcher = updater.dispatcher
 
     # Add command handlers
