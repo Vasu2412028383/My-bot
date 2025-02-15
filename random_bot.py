@@ -2,7 +2,7 @@ import logging
 import random
 from datetime import datetime
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
+from telegram.ext import Application, CommandHandler, CallbackContext
 
 # Set up logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -12,14 +12,14 @@ logger = logging.getLogger(__name__)
 user_checks = {}
 
 # Function to handle the /start command
-def start(update: Update, context: CallbackContext) -> None:
+async def start(update: Update, context: CallbackContext) -> None:
     user_first_name = update.message.from_user.first_name
     welcome_message = f"Welcome, {user_first_name}! 🎉\n\n"
     welcome_message += "Check out our channel: [Your Channel Name](https://t.me/darkdorking)"  # Replace with your channel link
-    update.message.reply_text(welcome_message, parse_mode='Markdown')
+    await update.message.reply_text(welcome_message, parse_mode='Markdown')
 
 # Function to handle the .gen command
-def generate_card(update: Update, context: CallbackContext) -> None:
+async def generate_card(update: Update, context: CallbackContext) -> None:
     if len(context.args) == 2:
         bin_number = context.args[0]  # Get the BIN from the command
         expire_date = context.args[1]  # Get the expiration date from the command
@@ -35,12 +35,12 @@ def generate_card(update: Update, context: CallbackContext) -> None:
             f"**BIN:** {bin_number}\n"
         )
         
-        update.message.reply_text(card_message, parse_mode='Markdown')
+        await update.message.reply_text(card_message, parse_mode='Markdown')
     else:
-        update.message.reply_text("Usage: .gen <bin> <expire_date>")
+        await update.message.reply_text("Usage: .gen <bin> <expire_date>")
 
 # Function to check card status with limits
-def check_card_with_limit(update: Update, context: CallbackContext) -> None:
+async def check_card_with_limit(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
     card_number = context.args[0] if len(context.args) > 0 else None
 
@@ -65,28 +65,25 @@ def check_card_with_limit(update: Update, context: CallbackContext) -> None:
                 f"**Card Number:** {card_number}\n"
                 f"**Status:** {'Live' if is_live else 'Dead'}\n"
             )
-            update.message.reply_text(status_message, parse_mode='Markdown')
+            await update.message.reply_text(status_message, parse_mode='Markdown')
         else:
-            update.message.reply_text("Usage: .chk <card_number>")
+            await update.message.reply_text("Usage: .chk <card_number>")
     else:
-        update.message.reply_text("Daily limit reached! Upgrade to premium membership for more checks.")
+        await update.message.reply_text("Daily limit reached! Upgrade to premium membership for more checks.")
 
 # Main function to set up the bot
 def main():
     # Directly set your bot token here
-    token = "7695368751:AAFVrzejlS0BLKZD7Bb1HXXgWl5PGclex_0"  # Replace with your actual bot token
+    TOKEN = "7695368751:AAFVrzejlS0BLKZD7Bb1HXXgWl5PGclex_0"  # Replace with your actual bot token
     app = Application.builder().token(TOKEN).build()
-  # Add your bot token here
-    dispatcher = updater.dispatcher
 
     # Add command handlers
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CommandHandler("gen", generate_card))
-    dispatcher.add_handler(CommandHandler("chk", check_card_with_limit))  # Updated check command
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("gen", generate_card))
+    app.add_handler(CommandHandler("chk", check_card_with_limit))  # Updated check command
 
     # Start polling for updates
-    updater.start_polling()
-    updater.idle()
+    app.run_polling()
 
 if __name__ == '__main__':
     main()
