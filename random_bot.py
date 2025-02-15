@@ -12,22 +12,15 @@ logger = logging.getLogger(__name__)
 # Dictionary to track user card checks
 user_checks = {}
 
-# Function to handle the /start command
 async def start(update: Update, context: CallbackContext) -> None:
     user_first_name = update.message.from_user.first_name
-    welcome_message = (
-        f"Welcome, {user_first_name}! 🎉\n\n"
-        "Check out our channel: [Your Channel Name](https://t.me/darkdorking)"
-    )
+    welcome_message = f"Welcome, {user_first_name}! 🎉\n\nCheck out our channel: [Your Channel](https://t.me/darkdorking)"
     await update.message.reply_text(welcome_message, parse_mode='Markdown')
 
-# Function to handle the .gen command
 async def generate_card(update: Update, context: CallbackContext) -> None:
     if context.args and len(context.args) == 2:
-        bin_number = context.args[0]  # Get the BIN from the command
-        expire_date = context.args[1]  # Get the expiration date from the command
-        
-        # Generate a random card number (for demonstration purposes)
+        bin_number = context.args[0]  
+        expire_date = context.args[1]  
         card_number = f"{bin_number}{random.randint(100000000, 999999999)}"
         
         card_message = (
@@ -40,7 +33,6 @@ async def generate_card(update: Update, context: CallbackContext) -> None:
     else:
         await update.message.reply_text("Usage: /gen <bin> <expire_date>")
 
-# Function to check card status with limits
 async def check_card_with_limit(update: Update, context: CallbackContext) -> None:
     user_id = update.message.from_user.id
     card_number = context.args[0] if context.args else None
@@ -69,9 +61,8 @@ async def check_card_with_limit(update: Update, context: CallbackContext) -> Non
     else:
         await update.message.reply_text("Daily limit reached! Upgrade to premium membership for more checks.")
 
-# Async main function
 async def main():
-    TOKEN = "8011551620:AAFvDlRL7brL1JF9kEpQJXIVzZf01og4Lc0"  # Replace with your actual bot token
+    TOKEN = "8011551620:AAFvDlRL7brL1JF9kEpQJXIVzZf01og4Lc0"  
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -82,4 +73,9 @@ async def main():
     await app.run_polling()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    loop = asyncio.get_event_loop()
+    if loop.is_running():
+        print("Existing event loop detected. Running in new task.")
+        loop.create_task(main())
+    else:
+        asyncio.run(main())
