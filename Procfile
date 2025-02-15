@@ -1,1 +1,1 @@
-worker: python random_bot.py
+web: python random_bot.py
